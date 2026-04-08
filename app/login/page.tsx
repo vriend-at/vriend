@@ -12,13 +12,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      setError('Konfigurationsfehler: Supabase-Umgebungsvariablen fehlen. Bitte in den Vercel-Projekteinstellungen unter Environment Variables setzen.')
+    if (!supabaseUrl || !supabaseKey) {
+      setError('Config error: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Add both to Vercel → Settings → Environment Variables and redeploy.')
       setLoading(false)
       return
     }
@@ -27,11 +30,13 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(
-        error.message === 'Invalid login credentials'
-          ? 'E-Mail oder Passwort ist falsch.'
-          : error.message
-      )
+      // Show the raw Supabase error so we can diagnose production issues
+      const status = (error as { status?: number }).status
+      const msg = error.message === 'Invalid login credentials'
+        ? 'E-Mail oder Passwort ist falsch.'
+        : error.message
+      setError(status ? `[${status}] ${msg}` : msg)
+      console.error('Supabase signInWithPassword error:', error)
       setLoading(false)
     } else {
       router.push('/dashboard')
@@ -104,6 +109,11 @@ export default function LoginPage() {
           <Link href="/signup" className="text-[#b45309] font-semibold hover:underline">
             Registrieren
           </Link>
+        </p>
+
+        {/* Env diagnostic — remove once login is stable */}
+        <p className="text-center text-[10px] text-[#a8a29e] mt-6">
+          env: url={supabaseUrl ? '✓' : '✗'} key={supabaseKey ? '✓' : '✗'}
         </p>
       </div>
     </div>
