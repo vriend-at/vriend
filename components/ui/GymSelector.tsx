@@ -10,8 +10,6 @@ interface Props {
 }
 
 export default function GymSelector({ gyms, selectedId, onChange }: Props) {
-  const selected = gyms.find(g => g.id === selectedId)
-
   return (
     <div className="relative">
       <select

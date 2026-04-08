@@ -1,4 +1,4 @@
-import { GRADES, GRADE_INDEX, Grade } from './constants'
+import { GRADES, Grade } from './constants'
 import { TeamMember } from './mock-data'
 
 export function totalRoutes(member: TeamMember): number {

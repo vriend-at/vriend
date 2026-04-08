@@ -43,7 +43,7 @@ export default function SessionBottomSheet({ session, routes, gymName, onClose }
               <h2 className="text-lg font-bold text-[#1c1917]">{formatDate(session.date)}</h2>
               <p className="text-sm text-[#78716c]">{gymName}</p>
               {session.notes && (
-                <p className="text-sm text-[#1c1917] mt-1 italic">"{session.notes}"</p>
+                <p className="text-sm text-[#1c1917] mt-1 italic">&quot;{session.notes}&quot;</p>
               )}
             </div>
             <button
