@@ -17,11 +17,21 @@ export default function LoginPage() {
     setError(null)
     setLoading(true)
 
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setError('Konfigurationsfehler: Supabase-Umgebungsvariablen fehlen. Bitte in den Vercel-Projekteinstellungen unter Environment Variables setzen.')
+      setLoading(false)
+      return
+    }
+
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('E-Mail oder Passwort ist falsch.')
+      setError(
+        error.message === 'Invalid login credentials'
+          ? 'E-Mail oder Passwort ist falsch.'
+          : error.message
+      )
       setLoading(false)
     } else {
       router.push('/dashboard')
