@@ -28,7 +28,9 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const isAuthPage = pathname === '/login' || pathname === '/signup'
+  const isAuthPage = pathname === '/login' || pathname === '/signup' ||
+    pathname === '/forgot-password' || pathname === '/auth/reset-password' ||
+    pathname === '/join'
 
   if (!user && !isAuthPage) {
     const url = request.nextUrl.clone()

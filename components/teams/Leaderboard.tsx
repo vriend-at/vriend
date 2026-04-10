@@ -1,12 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { UserPlus } from 'lucide-react'
 import { Team } from '@/lib/mock-data'
 import { GRADES, GRADE_COLORS } from '@/lib/constants'
 import { rankMembers, totalRoutes, formatTeamDate } from '@/lib/team-utils'
+import ConfirmModal from './ConfirmModal'
 
 const MEDALS = ['🥇', '🥈', '🥉']
-const CURRENT_USER_ID = 'user-1'
 
 // Row bg colours — used in both cells and sticky overrides
 const ROW_BG = (isCurrentUser: boolean) => isCurrentUser ? '#fef9f0' : '#ffffff'
@@ -14,9 +15,15 @@ const HEADER_BG = '#fafaf9'
 
 interface Props {
   team: Team
+  userId: string
+  onInvite: () => void
+  onLeave: () => Promise<void>
+  onDelete: () => Promise<void>
 }
 
-export default function Leaderboard({ team }: Props) {
+export default function Leaderboard({ team, userId, onInvite, onLeave, onDelete }: Props) {
+  const [confirm, setConfirm] = useState<'leave' | 'delete' | null>(null)
+  const isCreator = team.created_by === userId
   const ranked = rankMembers(team.members)
 
   // All grades with at least one completion, hardest first
@@ -38,7 +45,10 @@ export default function Leaderboard({ team }: Props) {
             seit {formatTeamDate(team.created_at)}
           </p>
         </div>
-        <button className="flex items-center gap-1.5 bg-[#fef3c7] hover:bg-amber-100 text-[#b45309] border border-amber-200 text-xs font-semibold rounded-xl px-3 py-2 transition-colors shrink-0">
+        <button
+          onClick={onInvite}
+          className="flex items-center gap-1.5 bg-[#fef3c7] hover:bg-amber-100 text-[#b45309] border border-amber-200 text-xs font-semibold rounded-xl px-3 py-2 transition-colors shrink-0"
+        >
           <UserPlus size={13} />
           Einladen
         </button>
@@ -100,7 +110,7 @@ export default function Leaderboard({ team }: Props) {
           <tbody>
             {ranked.map((member, i) => {
               const rank = i + 1
-              const isCurrentUser = member.id === CURRENT_USER_ID
+              const isCurrentUser = member.id === userId
               const total = totalRoutes(member)
               const rowBg = ROW_BG(isCurrentUser)
 
@@ -189,6 +199,37 @@ export default function Leaderboard({ team }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Leave / Delete */}
+      <div className="px-5 py-3 border-t border-[#f0ebe4] flex justify-end">
+        <button
+          onClick={() => setConfirm(isCreator ? 'delete' : 'leave')}
+          className={`text-xs font-semibold hover:underline ${isCreator ? 'text-red-500' : 'text-[#78716c]'}`}
+        >
+          {isCreator ? 'Team löschen' : 'Team verlassen'}
+        </button>
+      </div>
+
+      {confirm === 'leave' && (
+        <ConfirmModal
+          title="Team verlassen"
+          message={`Möchtest du ${team.name} wirklich verlassen?`}
+          confirmLabel="Verlassen"
+          onConfirm={async () => { await onLeave(); setConfirm(null) }}
+          onClose={() => setConfirm(null)}
+        />
+      )}
+
+      {confirm === 'delete' && (
+        <ConfirmModal
+          title="Team löschen"
+          message={`Möchtest du ${team.name} wirklich löschen? Alle Mitglieder werden entfernt.`}
+          confirmLabel="Löschen"
+          destructive
+          onConfirm={async () => { await onDelete(); setConfirm(null) }}
+          onClose={() => setConfirm(null)}
+        />
+      )}
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 
 export default function LoginPage() {
@@ -12,15 +13,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       setError('Config error: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Add both to Vercel → Settings → Environment Variables and redeploy.')
       setLoading(false)
       return
@@ -30,7 +28,6 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      // Show the raw Supabase error so we can diagnose production issues
       const status = (error as { status?: number }).status
       const msg = error.message === 'Invalid login credentials'
         ? 'E-Mail oder Passwort ist falsch.'
@@ -39,7 +36,13 @@ export default function LoginPage() {
       console.error('Supabase signInWithPassword error:', error)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      const pendingInvite = localStorage.getItem('vriend_pending_invite')
+      if (pendingInvite) {
+        localStorage.removeItem('vriend_pending_invite')
+        router.push(`/join?team=${pendingInvite}`)
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     }
   }
@@ -48,9 +51,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#f5f0eb] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[#b45309] tracking-tight">vriend</h1>
-          <p className="text-sm text-[#78716c] mt-1">your vertical friend</p>
+        <div className="flex flex-col items-center mb-8">
+          <Image src="/logo.png" alt="vriend" width={80} height={80} className="mb-3" />
+          <p className="text-sm text-[#78716c]">your vertical friend</p>
         </div>
 
         {/* Card */}
@@ -86,6 +89,11 @@ export default function LoginPage() {
                 className="w-full border border-[#e7e0d8] rounded-xl px-4 py-2.5 text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#b45309] bg-white"
                 placeholder="••••••••"
               />
+              <div className="mt-1.5 text-right">
+                <Link href="/forgot-password" className="text-xs text-[#b45309] hover:underline">
+                  Passwort vergessen?
+                </Link>
+              </div>
             </div>
 
             {error && (
@@ -109,11 +117,6 @@ export default function LoginPage() {
           <Link href="/signup" className="text-[#b45309] font-semibold hover:underline">
             Registrieren
           </Link>
-        </p>
-
-        {/* Env diagnostic — remove once login is stable */}
-        <p className="text-center text-[10px] text-[#a8a29e] mt-6">
-          env: url={supabaseUrl ? '✓' : '✗'} key={supabaseKey ? '✓' : '✗'}
         </p>
       </div>
     </div>

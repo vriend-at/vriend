@@ -5,11 +5,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 
-export default function SignupPage() {
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -18,23 +17,19 @@ export default function SignupPage() {
     setLoading(true)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://vriend.at/auth/reset-password',
     })
 
     if (error) {
       setError(error.message)
       setLoading(false)
     } else {
-      setSuccess(true)
+      setSent(true)
     }
   }
 
-  if (success) {
+  if (sent) {
     return (
       <div className="min-h-screen bg-[#f5f0eb] flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-sm">
@@ -46,15 +41,14 @@ export default function SignupPage() {
             <div className="w-12 h-12 rounded-2xl bg-[#fef3c7] flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl">📬</span>
             </div>
-            <h2 className="text-lg font-bold text-[#1c1917] mb-2">E-Mail bestätigen</h2>
+            <h2 className="text-lg font-bold text-[#1c1917] mb-2">E-Mail gesendet</h2>
             <p className="text-sm text-[#78716c]">
-              Wir haben dir eine Bestätigungs-E-Mail geschickt. Bitte klick auf den Link, um dein Konto zu aktivieren.
+              Falls ein Konto mit dieser E-Mail existiert, haben wir dir einen Link zum Zurücksetzen des Passworts geschickt.
             </p>
           </div>
           <p className="text-center text-sm text-[#78716c] mt-4">
-            Schon ein Konto?{' '}
             <Link href="/login" className="text-[#b45309] font-semibold hover:underline">
-              Anmelden
+              Zurück zur Anmeldung
             </Link>
           </p>
         </div>
@@ -73,7 +67,10 @@ export default function SignupPage() {
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-[#e7e0d8] p-6">
-          <h2 className="text-lg font-bold text-[#1c1917] mb-5">Konto erstellen</h2>
+          <h2 className="text-lg font-bold text-[#1c1917] mb-1">Passwort zurücksetzen</h2>
+          <p className="text-sm text-[#78716c] mb-5">
+            Gib deine E-Mail-Adresse ein und wir schicken dir einen Link zum Zurücksetzen.
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -91,22 +88,6 @@ export default function SignupPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-[#78716c] uppercase tracking-wide mb-1.5">
-                Passwort
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                minLength={6}
-                className="w-full border border-[#e7e0d8] rounded-xl px-4 py-2.5 text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#b45309] bg-white"
-                placeholder="Mindestens 6 Zeichen"
-              />
-            </div>
-
             {error && (
               <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
                 {error}
@@ -118,15 +99,14 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full bg-[#b45309] text-white rounded-xl py-3 font-semibold text-sm hover:bg-[#92400e] transition-colors disabled:opacity-60"
             >
-              {loading ? 'Registrieren…' : 'Registrieren'}
+              {loading ? 'Senden…' : 'Link senden'}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sm text-[#78716c] mt-4">
-          Schon ein Konto?{' '}
           <Link href="/login" className="text-[#b45309] font-semibold hover:underline">
-            Anmelden
+            Zurück zur Anmeldung
           </Link>
         </p>
       </div>

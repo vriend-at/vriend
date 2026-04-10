@@ -6,7 +6,9 @@ import BottomNav from './BottomNav'
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAuthPage = pathname === '/login' || pathname === '/signup'
+  const isAuthPage = pathname === '/login' || pathname === '/signup' ||
+    pathname === '/forgot-password' || pathname === '/auth/reset-password' ||
+    pathname === '/join'
 
   if (isAuthPage) {
     return <>{children}</>

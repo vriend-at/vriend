@@ -1,5 +1,6 @@
 import { createClient } from './supabase'
-import type { Session, Route } from './mock-data'
+import type { Session, Route, Team, TeamMember } from './mock-data'
+import type { Grade } from './constants'
 
 export async function getOrCreateTodaySession(userId: string, gymId: string): Promise<string | null> {
   const supabase = createClient()
@@ -54,6 +55,121 @@ export async function fetchRoutes(gymId: string | null): Promise<Route[]> {
   const { data } = await q
   return (data as Route[]) ?? []
 }
+
+// ─── Teams ────────────────────────────────────────────────────────────────────
+
+export async function ensureProfile(userId: string, email: string): Promise<void> {
+  const supabase = createClient()
+  const rawName = email.split('@')[0].replace(/[._-]/g, ' ')
+  const displayName = rawName.replace(/\b\w/g, (l: string) => l.toUpperCase())
+  await supabase.from('profiles').upsert(
+    { id: userId, display_name: displayName },
+    { onConflict: 'id', ignoreDuplicates: true }
+  )
+}
+
+function initialsFromName(name: string | null, email?: string | null): string {
+  if (!name && !email) return '?'
+  const str = name || email || '?'
+  return str.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+export async function fetchMyTeams(userId: string): Promise<Team[]> {
+  const supabase = createClient()
+
+  const { data: memberships } = await supabase
+    .from('team_members')
+    .select('team_id, teams(id, name, created_by, created_at)')
+    .eq('user_id', userId)
+
+  if (!memberships?.length) return []
+
+  const teams: Team[] = []
+
+  for (const m of memberships) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const team = m.teams as any
+    if (!team) continue
+
+    const [profilesResult, completionsResult] = await Promise.all([
+      supabase.rpc('get_team_member_profiles', { p_team_id: team.id }),
+      supabase.rpc('get_team_grade_completions', { p_team_id: team.id }),
+    ])
+
+    const profiles: Array<{ user_id: string; display_name: string }> =
+      profilesResult.data ?? []
+    const completions: Array<{ user_id: string; grade: string; cnt: number }> =
+      completionsResult.data ?? []
+
+    // Build per-member grade_completions map
+    const gradeMap = new Map<string, Map<string, number>>()
+    for (const c of completions) {
+      if (!gradeMap.has(c.user_id)) gradeMap.set(c.user_id, new Map())
+      gradeMap.get(c.user_id)!.set(c.grade, Number(c.cnt))
+    }
+
+    const members: TeamMember[] = profiles.map(p => ({
+      id: p.user_id,
+      display_name: p.display_name,
+      avatar_initials: initialsFromName(p.display_name),
+      grade_completions: Array.from(gradeMap.get(p.user_id)?.entries() ?? []).map(
+        ([grade, count]) => ({ grade: grade as Grade, count })
+      ),
+    }))
+
+    teams.push({
+      id: team.id,
+      name: team.name,
+      created_by: team.created_by,
+      created_at: team.created_at,
+      members,
+    })
+  }
+
+  return teams
+}
+
+export async function createTeam(name: string, userId: string): Promise<string> {
+  const supabase = createClient()
+
+  const { data: team, error: teamError } = await supabase
+    .from('teams')
+    .insert({ name, created_by: userId })
+    .select('id')
+    .single()
+  console.log('[createTeam] team insert:', { data: team, error: teamError })
+  if (teamError || !team) throw new Error(teamError?.message ?? 'Team konnte nicht erstellt werden')
+
+  const { error: memberError } = await supabase
+    .from('team_members')
+    .insert({ team_id: team.id, user_id: userId })
+  console.log('[createTeam] team_members insert:', { error: memberError })
+  if (memberError) throw new Error(memberError.message)
+
+  return team.id
+}
+
+export async function joinTeam(teamId: string, userId: string): Promise<boolean> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('team_members')
+    .upsert({ team_id: teamId, user_id: userId }, { onConflict: 'team_id,user_id', ignoreDuplicates: true })
+  return !error
+}
+
+export async function leaveTeam(teamId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.rpc('leave_team', { p_team_id: teamId })
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteTeam(teamId: string): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.from('teams').delete().eq('id', teamId)
+  if (error) throw new Error(error.message)
+}
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
 
 export async function fetchSessions(userId: string, gymId: string | null, limit = 10): Promise<Session[]> {
   const supabase = createClient()

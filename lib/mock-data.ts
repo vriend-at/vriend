@@ -53,6 +53,7 @@ export interface Team {
   name: string
   created_by: string
   created_at: string
+  invite_code?: string
   members: TeamMember[]
 }
 
