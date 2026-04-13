@@ -9,7 +9,8 @@
       "Bash(npx tsc:*)",
       "Read(//usr/local/bin/**)",
       "Read(//usr/**)",
-      "Bash(/usr/local/bin/node node_modules/.bin/tsc --noEmit)"
+      "Bash(/usr/local/bin/node node_modules/.bin/tsc --noEmit)",
+      "mcp__Claude_Preview__preview_start"
     ]
   }
 }

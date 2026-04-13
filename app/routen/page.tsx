@@ -10,6 +10,8 @@ import { getLastGymId, setLastGymId } from '@/lib/gym-store'
 import GymSelector from '@/components/ui/GymSelector'
 import RouteCard from '@/components/routen/RouteCard'
 
+const MAX_GRADE_KEY = 'vriend_max_grade'
+
 export default function RoutenPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [gyms, setGyms] = useState<Gym[]>([])
@@ -21,6 +23,20 @@ export default function RoutenPage() {
   const [gradeFilter, setGradeFilter] = useState<Grade | 'all'>('all')
   const [zoneFilter, setZoneFilter] = useState<string>('all')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [maxGrade, setMaxGrade] = useState<Grade | null>(null)
+
+  // Load max_grade from localStorage and listen for settings updates
+  useEffect(() => {
+    const stored = localStorage.getItem(MAX_GRADE_KEY) as Grade | null
+    if (stored && GRADES.includes(stored)) setMaxGrade(stored)
+
+    const handler = (e: Event) => {
+      const grade = (e as CustomEvent<{ maxGrade: Grade }>).detail?.maxGrade
+      if (grade && GRADES.includes(grade)) setMaxGrade(grade)
+    }
+    window.addEventListener('profileUpdated', handler)
+    return () => window.removeEventListener('profileUpdated', handler)
+  }, [])
 
   // Fetch user + gyms on mount, restore last used gym
   useEffect(() => {
@@ -70,6 +86,7 @@ export default function RoutenPage() {
     const filtered = gymRoutes.filter(route => {
       if (gradeFilter !== 'all' && route.grade !== gradeFilter) return false
       if (zoneFilter !== 'all' && route.zone !== zoneFilter) return false
+      if (maxGrade && GRADE_INDEX[route.grade] > GRADE_INDEX[maxGrade]) return false
       return true
     })
     filtered.sort((a, b) => {
@@ -77,7 +94,7 @@ export default function RoutenPage() {
       return sortDir === 'asc' ? diff : -diff
     })
     return filtered
-  }, [gymRoutes, gradeFilter, zoneFilter, sortDir])
+  }, [gymRoutes, gradeFilter, zoneFilter, sortDir, maxGrade])
 
   function handleGymChange(id: string | null) {
     setSelectedGymId(id)

@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase'
 
 export default function SignupPage() {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +24,7 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { display_name: name.trim() },
       },
     })
 
@@ -76,6 +78,21 @@ export default function SignupPage() {
           <h2 className="text-lg font-bold text-[#1c1917] mb-5">Konto erstellen</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#78716c] uppercase tracking-wide mb-1.5">
+                Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                autoComplete="name"
+                className="w-full border border-[#e7e0d8] rounded-xl px-4 py-2.5 text-sm text-[#1c1917] focus:outline-none focus:ring-2 focus:ring-[#b45309] bg-white"
+                placeholder="Dein Name"
+              />
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-[#78716c] uppercase tracking-wide mb-1.5">
                 E-Mail

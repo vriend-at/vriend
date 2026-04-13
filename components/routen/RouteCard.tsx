@@ -61,9 +61,7 @@ export default function RouteCard({ route, completed, onMarkComplete }: Props) {
           <span>
             {formatDate(route.set_date)}
             <span className="mx-1 text-[#e7e0d8]">→</span>
-            <span className={expiring && !completed ? 'text-yellow-600 font-semibold' : ''}>
-              {formatDate(route.remove_date)}
-            </span>
+            {formatDate(route.remove_date)}
           </span>
         </div>
       </div>

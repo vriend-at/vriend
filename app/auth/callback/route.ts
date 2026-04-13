@@ -24,7 +24,21 @@ export async function GET(request: Request) {
         },
       }
     )
+
     await supabase.auth.exchangeCodeForSession(code)
+
+    // Create profile from display_name set at signup, falling back to email prefix
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const rawName = user.user_metadata?.display_name
+        || user.email?.split('@')[0]?.replace(/[._-]/g, ' ')
+        || 'User'
+      const displayName = rawName.replace(/\b\w/g, (l: string) => l.toUpperCase())
+      await supabase.from('profiles').upsert(
+        { id: user.id, display_name: displayName },
+        { onConflict: 'id', ignoreDuplicates: true }
+      )
+    }
   }
 
   return NextResponse.redirect(new URL('/dashboard', request.url))
