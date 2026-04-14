@@ -45,13 +45,15 @@ export default function Leaderboard({ team, userId, onInvite, onLeave, onDelete 
             seit {formatTeamDate(team.created_at)}
           </p>
         </div>
-        <button
-          onClick={onInvite}
-          className="flex items-center gap-1.5 bg-[#fef3c7] hover:bg-amber-100 text-[#b45309] border border-amber-200 text-xs font-semibold rounded-xl px-3 py-2 transition-colors shrink-0"
-        >
-          <UserPlus size={13} />
-          Einladen
-        </button>
+        {isCreator && (
+          <button
+            onClick={onInvite}
+            className="flex items-center gap-1.5 bg-[#fef3c7] hover:bg-amber-100 text-[#b45309] border border-amber-200 text-xs font-semibold rounded-xl px-3 py-2 transition-colors shrink-0"
+          >
+            <UserPlus size={13} />
+            Einladen
+          </button>
+        )}
       </div>
 
       {/* Table */}
