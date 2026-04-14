@@ -16,9 +16,15 @@ export function topGrade(member: TeamMember): Grade | null {
 
 export function rankMembers(members: TeamMember[]): TeamMember[] {
   return [...members].sort((a, b) => {
-    const totalDiff = totalRoutes(b) - totalRoutes(a)
-    if (totalDiff !== 0) return totalDiff
-    // Tiebreak: compare from hardest grade down
+    // Primary: highest grade achieved (hardest first)
+    const topA = topGrade(a)
+    const topB = topGrade(b)
+    if (topA !== topB) {
+      if (topA === null) return 1
+      if (topB === null) return -1
+      return GRADES.indexOf(topB) - GRADES.indexOf(topA)
+    }
+    // Tiebreaker: descending through all grades, more routes wins
     for (let i = GRADES.length - 1; i >= 0; i--) {
       const grade = GRADES[i]
       const countA = a.grade_completions.find(g => g.grade === grade)?.count ?? 0
