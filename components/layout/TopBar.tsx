@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import SettingsModal from './SettingsModal'
 
@@ -42,13 +43,15 @@ export default function TopBar() {
     <>
       <header className="sticky top-0 z-20 bg-[#f5f0eb]/90 backdrop-blur-sm border-b border-[#e7e0d8]">
         <div className="max-w-lg mx-auto flex items-center justify-between px-4 py-3">
-          <Image
-            src="/logo.png"
-            alt="vriend"
-            height={32}
-            width={32}
-            className="h-8 w-auto object-contain"
-          />
+          <Link href="/dashboard">
+            <Image
+              src="/logo.png"
+              alt="vriend"
+              height={32}
+              width={32}
+              className="h-8 w-auto object-contain"
+            />
+          </Link>
           <button
             onClick={() => setOpen(true)}
             className="w-9 h-9 rounded-xl bg-[#b45309] flex items-center justify-center text-white text-sm font-bold hover:bg-[#92400e] transition-colors"

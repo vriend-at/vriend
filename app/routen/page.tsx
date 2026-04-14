@@ -54,12 +54,18 @@ function RoutenPageInner() {
       if (gymsData?.length) {
         setGyms(gymsData)
         const ids = gymsData.map((g: { id: string }) => g.id)
-        // Priority: ?gym= param > last used gym > first gym
-        const initial =
-          (gymParam && ids.includes(gymParam) ? gymParam : null) ??
-          (savedGymId && ids.includes(savedGymId) ? savedGymId : null) ??
-          gymsData[0].id
-        setSelectedGymId(initial)
+
+        if (gymParam === 'all') {
+          // Explicit "Alle Hallen" — skip auto-select
+          setSelectedGymId(null)
+        } else if (gymParam && ids.includes(gymParam)) {
+          // Specific gym from dashboard link
+          setSelectedGymId(gymParam)
+        } else {
+          // No param — normal auto-select: last used gym or first gym
+          const initial = (savedGymId && ids.includes(savedGymId) ? savedGymId : null) ?? gymsData[0].id
+          setSelectedGymId(initial)
+        }
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps

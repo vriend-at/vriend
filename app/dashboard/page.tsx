@@ -68,7 +68,7 @@ export default function DashboardPage() {
   )
 
   function handleRoutesCardClick() {
-    const url = selectedGymId ? `/routen?gym=${selectedGymId}` : '/routen'
+    const url = selectedGymId ? `/routen?gym=${selectedGymId}` : '/routen?gym=all'
     router.push(url)
   }
 
