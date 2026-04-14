@@ -18,6 +18,7 @@ function RoutenPageInner() {
   const [userId, setUserId] = useState<string | null>(null)
   const [gyms, setGyms] = useState<Gym[]>([])
   const [selectedGymId, setSelectedGymId] = useState<string | null>(null)
+  const [gymInitialized, setGymInitialized] = useState(false)
   const [gymRoutes, setGymRoutes] = useState<Route[]>([])
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [loadingRoutes, setLoadingRoutes] = useState(false)
@@ -66,6 +67,7 @@ function RoutenPageInner() {
           const initial = (savedGymId && ids.includes(savedGymId) ? savedGymId : null) ?? gymsData[0].id
           setSelectedGymId(initial)
         }
+        setGymInitialized(true)
       }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,23 +75,25 @@ function RoutenPageInner() {
 
   // Fetch routes + completed IDs when gym or user changes
   useEffect(() => {
-    if (!selectedGymId || !userId) return
+    if (!userId || !gymInitialized) return
 
     setLoadingRoutes(true)
     const supabase = createClient()
 
+    let routesQuery = supabase
+      .from('routes')
+      .select('id, gym_id, name, grade, color, zone, setter_name, set_date, remove_date, splat_url')
+    if (selectedGymId) routesQuery = routesQuery.eq('gym_id', selectedGymId)
+
     Promise.all([
-      supabase
-        .from('routes')
-        .select('id, gym_id, name, grade, color, zone, setter_name, set_date, remove_date, splat_url')
-        .eq('gym_id', selectedGymId),
+      routesQuery,
       fetchCompletedRouteIds(userId, selectedGymId),
     ]).then(([{ data: routesData }, ids]) => {
       setGymRoutes((routesData as Route[]) ?? [])
       setCompletedIds(ids)
       setLoadingRoutes(false)
     })
-  }, [selectedGymId, userId])
+  }, [selectedGymId, userId, gymInitialized])
 
   const zones = useMemo(() => {
     const set = new Set(gymRoutes.map(r => r.zone))
