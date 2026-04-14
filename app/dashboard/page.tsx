@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { type Gym, type Route, type Session } from '@/lib/mock-data'
 import { getGradeBreakdown } from '@/lib/utils'
 import { createClient } from '@/lib/supabase'
@@ -8,11 +9,11 @@ import { fetchCompletedRouteIds, fetchRoutes, fetchSessions } from '@/lib/supaba
 import GymSelector from '@/components/ui/GymSelector'
 import CircularProgress from '@/components/dashboard/CircularProgress'
 import GradeBreakdown from '@/components/dashboard/GradeBreakdown'
-import CompletedRoutesSheet from '@/components/dashboard/CompletedRoutesSheet'
 import AllSessionsSheet from '@/components/dashboard/AllSessionsSheet'
 import { CalendarDays, TrendingUp, ChevronRight } from 'lucide-react'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
   const [gyms, setGyms] = useState<Gym[]>([])
   const [selectedGymId, setSelectedGymId] = useState<string | null>(null)
@@ -20,7 +21,6 @@ export default function DashboardPage() {
   const [allRoutes, setAllRoutes] = useState<Route[]>([])
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [sessions, setSessions] = useState<Session[]>([])
-  const [showCompletedSheet, setShowCompletedSheet] = useState(false)
   const [showSessionsSheet, setShowSessionsSheet] = useState(false)
 
   // Fetch user + gyms on mount
@@ -67,31 +67,10 @@ export default function DashboardPage() {
     [routes, completedIds]
   )
 
-  // Build completed route items sorted by most recent completion date
-  const completedRouteItems = useMemo(() => {
-    // Map routeId → most recent session date where it was completed
-    const latestDate = new Map<string, string>()
-    for (const session of sessions) {
-      for (const sr of session.routes) {
-        if (!sr.completed) continue
-        const existing = latestDate.get(sr.route_id)
-        if (!existing || session.date > existing) {
-          latestDate.set(sr.route_id, session.date)
-        }
-      }
-    }
-
-    return Array.from(completedIds)
-      .map(id => {
-        const route = allRoutes.find(r => r.id === id)
-        if (!route) return null
-        const gymName = gyms.find(g => g.id === route.gym_id)?.name ?? '–'
-        const completedOn = latestDate.get(id) ?? ''
-        return { route, gymName, completedOn }
-      })
-      .filter((x): x is NonNullable<typeof x> => x !== null)
-      .sort((a, b) => b.completedOn.localeCompare(a.completedOn))
-  }, [completedIds, allRoutes, gyms, sessions])
+  function handleRoutesCardClick() {
+    const url = selectedGymId ? `/routen?gym=${selectedGymId}` : '/routen'
+    router.push(url)
+  }
 
   return (
     <div className="space-y-4">
@@ -118,7 +97,7 @@ export default function DashboardPage() {
         {/* Quick stats */}
         <div className="grid grid-cols-2 gap-3 mt-6">
           <button
-            onClick={() => setShowCompletedSheet(true)}
+            onClick={handleRoutesCardClick}
             className="bg-[#f5f0eb] rounded-xl p-3.5 flex items-center gap-3 hover:bg-[#ede8e1] transition-colors text-left"
           >
             <div className="w-9 h-9 rounded-lg bg-[#fef3c7] flex items-center justify-center shrink-0">
@@ -155,13 +134,7 @@ export default function DashboardPage() {
         <GradeBreakdown breakdown={breakdown} />
       </div>
 
-      {/* Bottom sheets */}
-      {showCompletedSheet && (
-        <CompletedRoutesSheet
-          items={completedRouteItems}
-          onClose={() => setShowCompletedSheet(false)}
-        />
-      )}
+      {/* Sessions bottom sheet */}
       {showSessionsSheet && (
         <AllSessionsSheet
           sessions={sessions}

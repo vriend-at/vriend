@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { type Gym, type Route } from '@/lib/mock-data'
 import { GRADES, Grade, GRADE_INDEX } from '@/lib/constants'
@@ -12,7 +13,8 @@ import RouteCard from '@/components/routen/RouteCard'
 
 const MAX_GRADE_KEY = 'vriend_max_grade'
 
-export default function RoutenPage() {
+function RoutenPageInner() {
+  const searchParams = useSearchParams()
   const [userId, setUserId] = useState<string | null>(null)
   const [gyms, setGyms] = useState<Gym[]>([])
   const [selectedGymId, setSelectedGymId] = useState<string | null>(null)
@@ -38,9 +40,10 @@ export default function RoutenPage() {
     return () => window.removeEventListener('profileUpdated', handler)
   }, [])
 
-  // Fetch user + gyms on mount, restore last used gym
+  // Fetch user + gyms on mount; prefer ?gym= param, then last used gym
   useEffect(() => {
     const supabase = createClient()
+    const gymParam = searchParams.get('gym')
     const savedGymId = getLastGymId()
 
     Promise.all([
@@ -51,10 +54,15 @@ export default function RoutenPage() {
       if (gymsData?.length) {
         setGyms(gymsData)
         const ids = gymsData.map((g: { id: string }) => g.id)
-        const initial = savedGymId && ids.includes(savedGymId) ? savedGymId : gymsData[0].id
+        // Priority: ?gym= param > last used gym > first gym
+        const initial =
+          (gymParam && ids.includes(gymParam) ? gymParam : null) ??
+          (savedGymId && ids.includes(savedGymId) ? savedGymId : null) ??
+          gymsData[0].id
         setSelectedGymId(initial)
       }
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Fetch routes + completed IDs when gym or user changes
@@ -261,5 +269,13 @@ export default function RoutenPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function RoutenPage() {
+  return (
+    <Suspense>
+      <RoutenPageInner />
+    </Suspense>
   )
 }
